@@ -20,7 +20,9 @@ debloat7-gpt-test-in-vm-only.ps1 -> gpt auto correction
 <br>
 debloat7-grok-test-in-vm-only.ps1 -> grok auto correction
 <br>
-debloat7-forked-from-debloat81-test-only-in-vm.ps1 -> added important Windows 7 services, but some Powershell commands are not compatible with Windows 7.
+debloat7-forked-from-debloat81-test-only-in-vm.ps1 -> added important Windows 7 services, 
+<br>
+but some Powershell commands are not compatible with Windows 7.
 
 <br>
 
