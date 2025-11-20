@@ -1,0 +1,392 @@
+﻿<#
+Windows 7 Debloater + [2025]
+
+Script is based upon Windows 8.1 Debloater: https://github.com/teeotsa/windows-8-debloat
+
+Original functionality:
+- disable some of the bloat services
+- disable telemetry, scheduled crap tasks and Defender
+- disable autologger
+
+Compiled by TrackerNinja aka spacedrone808:
+https://trackerninja.codeberg.page
+
+What's new:
+- implemented substantially more comprehensive services management 
+- high risk infection SMB1 is disabled to minimize attack vector 
+- included important UxSms service, which is managing GUI in Win 7 and missing in Win 8.1
+- applied some tweaks here and there
+- added probably unneeded GUI niceties
+
+#>
+
+
+$host.UI.RawUI.BackgroundColor = 'Black'
+Clear-Host 
+
+Write-Host "Welcome to Windows 7 Debloater+ [2025]`n" -ForegroundColor White
+
+Write-Host "Script is based upon Windows 8.1 Debloater: 
+https://github.com/teeotsa/windows-8-debloat
+Compiled by TrackerNinja aka spacedrone808.
+
+Original functionality:
+- disable some of the bloat services
+- disable telemetry, scheduled crap tasks and Defender
+- disable autologger
+
+What's new:
+- implemented substantially more comprehensive services management 
+- high risk infection SMB1 is disabled to minimize attack vector 
+- applied some tweaks here and there
+- added probably unneeded GUI niceties
+
+`n" -ForegroundColor Red
+Write-Host "https://trackerninja.codeberg.page`n" -ForegroundColor White
+
+#Requires -RunAsAdministrator
+
+Add-Type -AssemblyName System.Windows.Forms
+
+# Initial confirmation GUI
+$result = [System.Windows.Forms.MessageBox]::Show("We are going to change your services configuration [by a big margin], disable SMB1 protocol, disable telemetry, crap tasks and Defender, disable autologger, apply some tweaks here and there and do some other dirty hacking, math & science. Do you allow to do such things to your puter?", "User request for science and magic", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+if ($result -ne [System.Windows.Forms.DialogResult]::Yes) {
+    exit
+}
+
+
+Write-Host "Starting to dump bloat services...`n" -ForegroundColor Green
+Write-Host "This may take some time, so hold your horses...`n" -ForegroundColor Yellow
+
+# Services to disable and stop
+$disabledServices = @(
+    "RemoteRegistry", "RemoteAccess", "WinRM", "TermService", "SessionEnv", "UmRdpService",
+    "SSDPSRV", "WMPNetworkSvc", "p2psvc", "p2pimsvc", "PeerDistSvc", "PNRPsvc", "HomeGroupListener", "HomeGroupProvider", "upnphost", "fdPHost", "FDResPub", "SNMPTRAP", "lmhosts", "TlntSvr", "SharedAccess", "LanmanWorkstation", "LanmanServer", "wcncsvc", "RpcLocator", "CscService", "napagent", "Netlogon", "NfsClnt", "CertPropSvc", "WebClient", "TapiSrv", "Browser", "NetTcpPortSharing", "lltdsvc", "edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService", "QWAVE", "WwanSvc", "workfolderssvc", "wmiApSrv", "WSService", "ALG", "WinHttpAutoProxySvc", "PNRPAutoReg",
+    "bthserv", "BthHFSrv", "WlanSvc", "Fax",
+    "WbioSrvc", "lfsvc", "SCPolicySvc", "ScDeviceEnum", "SensrSvc", "IEEtwCollectorService", "WPCSvc", "SCardSvr", "wlidsvc", "fhsvc", "wercplsupport", "DPS", "WdiServiceHost", "WdiSystemHost", "DiagTrack", "PerfHost", "pla",
+    "vmicvss", "vmictimesync", "vmicrdv", "vmicheartbeat", "vmicshutdown", "vmicguestinterface", "vmickvpexchange",
+    "wuauserv", "BITS",
+    "TabletInputService", "Spooler", "PrintNotify", "mDNSResponder", "WiaRpc", "StiSvc", "MSiSCSI", "MsKeyboardFilter", "smphost",
+    "wscsvc", "aspnet_state", "AxInstSV", "WSearch", "AppXSvc", "AppMgmt", "TrkWks", "seclogon", "SysMain", "StorSvc", "hkmsvc", "AppIDSvc", "BDESVC", "wbengine", "EFS", "WdNisSvc", "WinDefend", "AppHostSvc", "defragsvc"
+)
+
+foreach ($service in $disabledServices) {
+    Set-Service -Name $service -StartupType Disabled -ErrorAction SilentlyContinue
+    Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+}
+
+# Services to set auto and ensure running
+$autoRunningServices = @(
+    "UxSms", "RpcSs", "RpcEptMapper", "CryptSvc", "PolicyAgent", "SamSs", "IKEEXT", "Winmgmt", "ProfSvc", "Schedule", "SystemEventsBroker", "BrokerInfrastructure", "PlugPlay", "AudioSrv", "AudioEndpointBuilder", "MMCSS", "hidserv", "Themes", "Power", "EventSystem", "DcomLaunch", "SENS", "Dhcp", "Dnscache", "Wcmsvc", "gpsvc", "nsi", "LSM", "NlaSvc", "netprofm", "FontCache", "MpsSvc"
+)
+
+foreach ($service in $autoRunningServices) {
+    Set-Service -Name $service -StartupType Automatic -ErrorAction SilentlyContinue
+    Start-Service -Name $service -ErrorAction SilentlyContinue
+}
+
+# Services to set manual and ensure running
+$manualRunningServices = @(
+    "BFE", "PcaSvc", "DeviceInstall", "DsmSvc"
+)
+
+foreach ($service in $manualRunningServices) {
+    Set-Service -Name $service -StartupType Manual -ErrorAction SilentlyContinue
+    Start-Service -Name $service -ErrorAction SilentlyContinue
+}
+
+# Services to set auto and ensure stopped
+$autoStoppedServices = @(
+    "EventLog", "sppsvc"
+)
+
+foreach ($service in $autoStoppedServices) {
+    Set-Service -Name $service -StartupType Automatic -ErrorAction SilentlyContinue
+    Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+}
+
+# Services to set manual and ensure stopped
+$manualStoppedServices = @(
+    "Netman", "AppReadiness", "AeLookupSvc", "Eaphost", "VaultSvc", "MSDTC", "ShellHWDetection", "NcaSvc", "COMSysApp", "KeyIso", "Appinfo", "DeviceAssociationService", "msiserver", "TrustedInstaller", "SstpSvc", "W32Time", "iphlpsvc", "FontCache3.0.0.0", "WerSvc", "Wecsvc", "UI0Detect", "KtmRm", "WPDBusEnum", "swprv", "dot3svc", "RasMan", "RasAuto", "svsvc", "THREADORDER", "TimeBroker", "vds", "WcsPlugInService", "VSS", "wudfsvc", "WEPHOSTSVC", "NcbService", "NcdAutoSetup"
+)
+
+foreach ($service in $manualStoppedServices) {
+    Set-Service -Name $service -StartupType Manual -ErrorAction SilentlyContinue
+    Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
+}
+
+Clear-Host 
+
+# Services disabled
+Write-Host "Bloat services were disabled!`n" -ForegroundColor Green
+
+# Disable SMB1
+Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue
+
+Write-Host "SMB1 is removed, attack vector minimized!`n" -ForegroundColor Green
+
+# Disable Telemetry
+Write-Host 'Disabling telemetry and personal data collection...'
+$Job = Start-Job -ScriptBlock {
+    @("HKLM:\SOFTWARE\Policies\Microsoft\SQMClient", "HKLM:\SOFTWARE\Policies\Microsoft\SQMClient\Windows", "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent", "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection") | ForEach-Object {
+        If (!(Test-Path $_))
+        {
+            New-Item -Path $_ -Force | Out-Null
+        }
+    }
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'AllowTelemetry' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'MaxTelemetryAllowed' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'AllowTelemetry' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection' -Name 'MaxTelemetryAllowed' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'AllowTelemetry' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' -Name 'DoNotShowFeedbackNotifications' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' -Name 'DisableWindowsConsumerFeatures' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' -Name 'DisableTailoredExperiencesWithDiagnosticData' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Policies\Microsoft\SQMClient\Windows' -Name 'CEIPEnable' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "Telemetry should be disabled for now!`n" -ForegroundColor Green
+
+# Disable Windows Error Reporting
+Write-Host 'Disabling Windows Error Reporting...'
+$Job = Start-Job -ScriptBlock {
+    $Service = Get-Service | ?{$_.DisplayName -match 'Windows Error Reporting'}
+    $Service.Stop() | Out-Null
+    Remove-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
+    New-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Force | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Name 'Disabled' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-Service -Name $Service.Name -StartupType Disabled | Out-Null
+    Get-ChildItem -Path "$env:ProgramData\Microsoft\Windows\WER" -Force -Recurse | %{ Remove-Item -Path $_.FullName -Force -Recurse | Out-Null }
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "Windows Error Reporting is disabled!`n" -ForegroundColor Green
+
+# Disable Scheduled Tasks
+Write-Host 'Disabling Bloated Scheduled Tasks...'
+$Job = Start-Job -ScriptBlock {
+    $Paths = @(
+        '\Microsoft\Windows\.NET Framework'
+        '\Microsoft\Windows\Active Directory Rights Management Services Client'
+        '\Microsoft\Windows\AppID'
+        '\Microsoft\Windows\Application Experience'
+        '\Microsoft\Windows\ApplicationData'
+        '\Microsoft\Windows\AppxDeploymentClient'
+        '\Microsoft\Windows\Autochk'
+        '\Microsoft\Windows\Chkdsk'
+        '\Microsoft\Windows\Customer Experience Improvement Program'
+        '\Microsoft\Windows\Data Integrity Scan'
+        '\Microsoft\Windows\Defrag'
+        '\Microsoft\Windows\Device Setup'
+        '\Microsoft\Windows\Diagnosis'
+        '\Microsoft\Windows\DiskCleanup'
+        '\Microsoft\Windows\DiskDiagnostic'
+        '\Microsoft\Windows\DiskFootprint'
+        '\Microsoft\Windows\DiskFootprint'
+        '\Microsoft\Windows\FileHistory'
+        '\Microsoft\Windows\IME'
+        '\Microsoft\Windows\Location'
+        '\Microsoft\Windows\Maintenance'
+        '\Microsoft\Windows\MemoryDiagnostic'
+        '\Microsoft\Windows\Mobile Broadband Accounts'
+        '\Microsoft\Windows\PerfTrack'
+        '\Microsoft\Windows\Offline Files'
+        '\Microsoft\Windows\PI'
+        '\Microsoft\Windows\Power Efficiency Diagnostics'
+        '\Microsoft\Windows\RAC'
+        '\Microsoft\Windows\RecoveryEnvironment'
+        '\Microsoft\Windows\Registry'
+        '\Microsoft\Windows\Servicing'
+        '\Microsoft\Windows\SettingSync'
+        '\Microsoft\Windows\SkyDrive'
+        '\Microsoft\Windows\SoftwareProtectionPlatform'
+        '\Microsoft\Windows\SpacePort'
+        '\Microsoft\Windows\Sysmain'
+        '\Microsoft\Windows\SystemRestore'
+        '\Microsoft\Windows\TextServicesFramework'
+        '\Microsoft\Windows\Time Synchronization'
+        '\Microsoft\Windows\TPM'
+        '\Microsoft\Windows\User Profile Service'
+        '\Microsoft\Windows\WDI'
+        '\Microsoft\Windows\Windows Defender'
+        '\Microsoft\Windows\Windows Error Reporting'
+        '\Microsoft\Windows\Windows Filtering Platform'
+        '\Microsoft\Windows\Windows Media Sharing'
+        '\Microsoft\Windows\WindowsColorSystem'
+        '\Microsoft\Windows\WindowsUpdate'
+        '\Microsoft\Windows\WOF'
+        '\Microsoft\Windows\Work Folders'
+        '\Microsoft\Windows\Workplace Join'
+        '\Microsoft\Windows\WS'
+    )
+    Foreach ($TaskRoot in $Paths)
+    {
+        Get-ScheduledTask -TaskPath (-join($TaskRoot,'\')) -ErrorAction SilentlyContinue | %{
+            $FullPath = -join($_.TaskPath, '', $_.TaskName)
+            Disable-ScheduledTask -TaskName "$FullPath" -ErrorAction SilentlyContinue | Out-Null
+        }
+    }
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "Scheduled Tasks disabled!`n" -ForegroundColor Green
+
+# Disable Windows Defender
+Write-Host 'Disabling Windows Defender...'
+$Job = Start-Job -ScriptBlock {
+    Try
+    {
+        # Enable TLS 1.2 Capabilities
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12  
+        $WebClient = New-Object System.Net.WebClient
+        $Link = 'https://github.com/M2Team/NSudo/releases/download/8.2/NSudo_8.2_All_Components.zip'
+
+        # Path
+        $ArchiveSavePath = [System.IO.Path]::Combine($env:TEMP, $Link.Substring($Link.LastIndexOf('/') + 1))
+        $ExpandPath = [System.IO.Path]::Combine($env:TEMP, 'NSudo_Expand')
+        $NSudoLauncher = [System.IO.Path]::Combine($ExpandPath, 'NSudo Launcher', 'Win32', 'NSudoLG.exe')
+
+        # Download
+        If (!(Test-Path $ArchiveSavePath))
+        {
+            $WebClient.DownloadFile($Link, $ArchiveSavePath)
+        }
+
+        # Expand
+        If (!(Test-Path $ExpandPath))
+        {
+            $shell = New-Object -ComObject shell.application
+            $zip = $shell.NameSpace($ArchiveSavePath)
+            New-Item -ItemType Directory -Path $ExpandPath -Force | Out-Null
+            foreach ($item in $zip.items())
+            {
+                $shell.NameSpace($ExpandPath).copyhere($item, 0x14) # 0x14 = no progress dialog, respond yes to prompts
+            }
+        }
+
+        # Launch
+        Start-Process -FilePath "$NSudoLauncher" -ArgumentList '-U:T -P:E -ShowWindowMode:Hide cmd /c sc config WinDefend start= disabled>nul' -Verb RunAs -Wait -WindowStyle Hidden
+        Start-Process -FilePath "$NSudoLauncher" -ArgumentList '-U:T -P:E -ShowWindowMode:Hide cmd /c sc config WdNisSvc start= disabled>nul' -Verb RunAs -Wait -WindowStyle Hidden
+
+        # Remove Files
+        Remove-Item -Path $ArchiveSavePath -Force -Recurse | Out-Null
+        Remove-Item -Path $ExpandPath -Force -Recurse | Out-Null
+    }
+    Catch
+    {
+        Exit
+    }
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "Windows Defender is ditched!`n" -ForegroundColor Green
+
+# Disable Logs
+Write-Host 'Disabling uneeded System Logging...'
+$Job = Start-Job -ScriptBlock {
+    Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\WMI\Autologger' | %{
+        $Name = $_.Name.Replace('HKEY_LOCAL_MACHINE','HKLM:')
+        Set-ItemProperty -Path $Name -Name 'Start' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+        Set-ItemProperty -Path $Name -Name 'Enabled' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    }
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "Logging is disabled!`n" -ForegroundColor Green
+
+# Apply System Tweaks
+Write-Host 'Tweaking System...'
+$Job = Start-Job -ScriptBlock {
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Control\Session Manager\Power' -Name 'HiberbootEnabled' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'HiberbootEnabled' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Control\Session Manager\Memory Management' -Name 'LargeSystemCache' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Control\PriorityControl' -Name 'Win32PrioritySeparation' -Value 0x26 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Control\Session Manager\Memory Management\PrefetchParameters' -Name 'EnablePrefetcher' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\ControlSet001\Control\Session Manager\Memory Management\PrefetchParameters' -Name 'EnableSuperfetch' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Peernet
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Peernet')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Peernet' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Peernet' -Name 'Disabled' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable NetCrawling
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name 'NoNetCrawling' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Hibernation
+    Start-Process -FilePath 'cmd' -ArgumentList '/c powercfg -h off' -Verb 'Runas' -WindowStyle Hidden -Wait
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Power' -Name 'HibernateEnabled' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Clear Document Info on Exit
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer' -Name 'ClearRecentDocsOnExit' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Settings Sync
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\SettingSync' -Name 'EnableBackupForWin8Apps' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\SettingSync' -Name 'DisableSettingSync' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable SmartScreen
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\System' -Name 'EnableSmartScreen' -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer' -Name 'SmartScreenEnabled' -Value 'Off' -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Input Data Collection
+    New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization' -Force | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization' -Name 'RestrictImplicitInkCollection' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization' -Name 'RestrictImplicitTextCollection' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable NTFS Encryption
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Policies' -Name 'NtfsDisableEncryption' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable System Restore
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore' -Name 'DisableConfig' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore' -Name 'DisableSR' -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null
+
+    # File Protection
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Windows File Protection')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Windows File Protection' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Windows File Protection' -Name SfcScan -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    
+    # Disable Windows Digital Locker
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Digital Locker')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Digital Locker' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Digital Locker' -Name DoNotRunDigitalLocker -Value 1 -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable DEP for Windows Explorer
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer' -Name NoDataExecutionPrevention -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    
+    # Disable File History
+    If (!(Test-Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\FileHistory')) { New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\FileHistory' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\FileHistory' -Name Disabled -Value 1 -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Location Stuff
+    If (!(Test-Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors')) { New-Item -Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors' -Name DisableLocationScripting -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors' -Name DisableLocation -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors' -Name DisableSensors -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\Software\Policies\Microsoft\Windows\LocationAndSensors' -Name DisableWindowsLocationProvider -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Sensors\LocationProvider' -Name CSEnable -Value 0 -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Remote Desktop
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance' -Name fAllowFullControl -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance' -Name fAllowToGetHelp -Value 0 -ErrorAction SilentlyContinue | Out-Null
+
+    # Configure Windows Update
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update' -Name AUOptions -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update' -Name CachedAUOptions -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update' -Name IncludeRecommendedUpdates -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    
+    # Disable EdgeUI Corners
+    If (!(Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUi')) { New-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUi' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUi' -Name DisableTLCorner -Value 1 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUi' -Name DisableTRCorner -Value 1 -ErrorAction SilentlyContinue | Out-Null
+
+    # Disable Tracking
+    If (!(Test-Path 'HKLM:\SOFTWARE\Microsoft\Tracing')) { New-Item -Path 'HKLM:\SOFTWARE\Microsoft\Tracing' -Force | Out-Null }
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Tracing' -Name EnableConsoleTracing -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Tracing' -Name EnableFileTracing -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Tracing' -Name EnableAutoFileTracing -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name Start_TrackDocs -Value 0 -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' -Name Start_TrackProgs -Value 0 -ErrorAction SilentlyContinue | Out-Null
+}
+Wait-Job -Id $Job.Id | Out-Null
+Write-Host "System is tweaked, press OK to reboot`n" -ForegroundColor Red
+
+
+# Completion GUI
+[System.Windows.Forms.MessageBox]::Show("Optimization completed! Windows 7 is free from bloat. Your computer will be restarted for better experience!", "Crap was successfully suppressed!", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+# Restart computer
+Restart-Computer -Force
