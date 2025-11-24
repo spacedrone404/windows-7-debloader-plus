@@ -2,6 +2,8 @@
 
 Similar to [[Debloater 8.1]](https://github.com/spacedrone404/windows-8-1-debloader-plus).
 
+> This is ALPHA! Report bugs and suggestions in the Issues tab.
+
 <br>
 
 What's new:
